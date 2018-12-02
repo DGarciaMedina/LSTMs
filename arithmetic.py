@@ -4,8 +4,8 @@ from bisect import bisect
 
 def encode(x, p):
 
-#    precision = 32
-    precision = 6
+    precision = 32
+#    precision = 6
     one = int(2**precision - 1)
     quarter = int(ceil(one/4))
     half = 2*quarter
@@ -84,7 +84,6 @@ def encode(x, p):
                 lo -= quarter
                 hi -= quarter # subtract 'quarter' from lo and hi
             else:
-                print(hi,lo)
                 break # we break the infinite loop if the interval has reached an un-stretchable state
             # now we can stretch the interval (for all 3 conditions above) by multiplying by 2
             lo *= 2 # multiply lo by 2

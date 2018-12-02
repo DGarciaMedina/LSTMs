@@ -1,6 +1,7 @@
 from trees import *
 from vl_codes import *
 import arithmetic
+import conditional_arithmetic as con_ari
 from json import load
 from sys import argv
 
@@ -12,6 +13,8 @@ def camunzip(filename):
         method = 'shannon_fano'
     elif (filename[-1] == 'a'):
         method = 'arithmetic'
+    elif (filename[-1] == "c"):
+        method = "conditional-arithmetic"
     else:
         raise NameError('Unknown compression method')
     
@@ -37,7 +40,8 @@ def camunzip(filename):
 
     elif method == 'arithmetic':
         x = arithmetic.decode(y,p,n)
-
+    elif method == "conditional-arithmetic":
+        x = con_ari.decode(y,p,n)
     else:
         raise NameError('This will never happen (famous last words)')
     

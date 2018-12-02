@@ -1,6 +1,7 @@
 from trees import *
 from vl_codes import *
 import arithmetic 
+import conditional_arithmetic as con_ari
 from itertools import groupby
 from json import dump
 from sys import argv
@@ -27,7 +28,8 @@ def camzip(method, filename):
 
     elif method == 'arithmetic':
         y = arithmetic.encode(x,p)
-
+    elif method == "conditional-arithmetic":
+        y = con_ari.encode(x,p)
     else:
         raise NameError('Compression method %s unknown' % method)
     
@@ -46,13 +48,17 @@ def camzip(method, filename):
         dump(frequencies, fp)
 
 
-if __name__ == "__main__":
-    if (len(argv) != 3):
-        print('Usage: python %s compression_method filename\n' % sys.argv[0])
-        print('Example: python %s huffman hamlet.txt' % sys.argv[0])
-        print('or:      python %s shannon_fano hamlet.txt' % sys.argv[0])
-        print('or:      python %s arithmetic hamlet.txt' % sys.argv[0])
-        exit()
+#if __name__ == "__main__":
+#    if (len(argv) != 3):
+#        print('Usage: python %s compression_method filename\n' % argv[0])
+#        print('Example: python %s huffman hamlet.txt' % argv[0])
+#        print('or:      python %s shannon_fano hamlet.txt' % argv[0])
+#        print('or:      python %s arithmetic hamlet.txt' % argv[0])
+#        exit()
+#        
+#    camzip(argv[1], argv[2])
 
-    camzip(argv[1], argv[2])
+method = 'conditional-arithmetic'
+filename = 'hamlet.txt'
 
+camzip(method,filename)
