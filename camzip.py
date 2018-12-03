@@ -48,17 +48,12 @@ def camzip(method, filename):
         dump(frequencies, fp)
 
 
-#if __name__ == "__main__":
-#    if (len(argv) != 3):
-#        print('Usage: python %s compression_method filename\n' % argv[0])
-#        print('Example: python %s huffman hamlet.txt' % argv[0])
-#        print('or:      python %s shannon_fano hamlet.txt' % argv[0])
-#        print('or:      python %s arithmetic hamlet.txt' % argv[0])
-#        exit()
-#        
-#    camzip(argv[1], argv[2])
-
-method = 'conditional-arithmetic'
-filename = 'hamlet.txt'
-
-camzip(method,filename)
+if __name__ == "__main__":
+    if (len(argv) != 3):
+        print('Usage: python %s compression_method filename\n' % argv[0])
+        print('Example: python %s huffman hamlet.txt' % argv[0])
+        print('or:      python %s shannon_fano hamlet.txt' % argv[0])
+        print('or:      python %s arithmetic hamlet.txt' % argv[0])
+        exit()
+        
+    camzip(argv[1], argv[2])

@@ -12,8 +12,22 @@ from keras.layers import CuDNNLSTM
 from keras.callbacks import ModelCheckpoint
 from keras.utils import np_utils
 import operator
+import time
+
+char_to_int = {'\n': 0, ' ': 1, '!': 2, '"': 3, '#': 4, '$': 5, '%': 6, '&': 7,
+                   "'": 8, '(': 9, ')': 10, '*': 11, ',': 12, '-': 13, '.': 14, '/': 15,
+                   '0': 16, '1': 17, '2': 18, '3': 19, '4': 20, '5': 21, '6': 22, '7': 23,
+                   '8': 24, '9': 25, ':': 26, ';': 27, '?': 28, '@': 29, 'A': 30, 'B': 31,
+                   'C': 32, 'D': 33, 'E': 34, 'F': 35, 'G': 36, 'H': 37, 'I': 38, 'J': 39,
+                   'K': 40, 'L': 41, 'M': 42, 'N': 43, 'O': 44, 'P': 45, 'Q': 46, 'R': 47,
+                   'S': 48, 'T': 49, 'U': 50, 'V': 51, 'W': 52, 'X': 53, 'Y': 54, 'Z': 55,
+                   '[': 56, ']': 57, '_': 58, 'a': 59, 'b': 60, 'c': 61, 'd': 62, 'e': 63,
+                   'f': 64, 'g': 65, 'h': 66, 'i': 67, 'j': 68, 'k': 69, 'l': 70, 'm': 71,
+                   'n': 72, 'o': 73, 'p': 74, 'q': 75, 'r': 76, 's': 77, 't': 78, 'u': 79,
+                   'v': 80, 'w': 81, 'x': 82, 'y': 83, 'z': 84, '|': 85}
 
 def load_LSTM(n):
+    start = time.time()
     
     # define the LSTM model
     model = Sequential()
@@ -28,21 +42,13 @@ def load_LSTM(n):
     model.load_weights(filename)
     model.compile(loss='categorical_crossentropy', optimizer='adam')
     
+#    print("The time to load the LSTM model is:",time.time()-start)
+    
     return model
 
-def get_probabilities(prior_sequence,model,n_vocab,char_to_int):
+def get_probabilities(prior_sequence,model,n_vocab,is_encoding):
     
-    char_to_int = {'\n': 0, ' ': 1, '!': 2, '"': 3, '#': 4, '$': 5, '%': 6, '&': 7,
-                   "'": 8, '(': 9, ')': 10, '*': 11, ',': 12, '-': 13, '.': 14, '/': 15,
-                   '0': 16, '1': 17, '2': 18, '3': 19, '4': 20, '5': 21, '6': 22, '7': 23,
-                   '8': 24, '9': 25, ':': 26, ';': 27, '?': 28, '@': 29, 'A': 30, 'B': 31,
-                   'C': 32, 'D': 33, 'E': 34, 'F': 35, 'G': 36, 'H': 37, 'I': 38, 'J': 39,
-                   'K': 40, 'L': 41, 'M': 42, 'N': 43, 'O': 44, 'P': 45, 'Q': 46, 'R': 47,
-                   'S': 48, 'T': 49, 'U': 50, 'V': 51, 'W': 52, 'X': 53, 'Y': 54, 'Z': 55,
-                   '[': 56, ']': 57, '_': 58, 'a': 59, 'b': 60, 'c': 61, 'd': 62, 'e': 63,
-                   'f': 64, 'g': 65, 'h': 66, 'i': 67, 'j': 68, 'k': 69, 'l': 70, 'm': 71,
-                   'n': 72, 'o': 73, 'p': 74, 'q': 75, 'r': 76, 's': 77, 't': 78, 'u': 79,
-                   'v': 80, 'w': 81, 'x': 82, 'y': 83, 'z': 84, '|': 85}
+    start = time.time()
     
     int_to_char =  dict((v,k) for k,v in char_to_int.items())
     
@@ -62,6 +68,10 @@ def get_probabilities(prior_sequence,model,n_vocab,char_to_int):
     prediction_dict = dict(sorted(prediction_dict.items(), key=operator.itemgetter(1), reverse = True))
     
     p = prediction_dict
+    
+    if not is_encoding:
+        alphabet = list(p)
+        
 
     # Compute cumulative probability as in Shannon-Fano
     f = [0]
@@ -69,11 +79,20 @@ def get_probabilities(prior_sequence,model,n_vocab,char_to_int):
         f.append(f[-1]+p[a])
     f.pop()
     
-    f = dict([(a,mf) for a,mf in zip(p,f)])
+    if is_encoding:
+        f = dict([(a,mf) for a,mf in zip(p,f)])
+    
+    
+#    print("The time to find the probability using the LSTM is:",time.time()-start)
 
-    return p,f
+    if is_encoding:
+        return p,f
+    else:
+        p = list(p.values())
+        return p,f,alphabet
 
 def encode(x,p):
+    start = time.time()
     '''
     The inputs are described below:
         x: The binary array of characters of the text. E.g.
@@ -158,7 +177,6 @@ def encode(x,p):
           characters were found) and their binary represenation, and viceversa.
     '''
     char_to_int = dict((c, i) for i, c in enumerate(chars))
-    int_to_char = dict((i, c) for i, c in enumerate(chars)) # not being used
     
     # Number of characters that the LSTM was trained with
     n_vocab = 86 
@@ -295,8 +313,8 @@ def encode(x,p):
         
         p,f = get_probabilities(prior_sequence=A, 
                                 model=model, 
-                                n_vocab=n_vocab, 
-                                char_to_int=char_to_int)
+                                n_vocab=n_vocab,
+                                is_encoding=True)
         '''
         p looks like this:
         p = {0: 0.5235542, 11: 0.22898121, 38: 0.06381601, 1: 0.039520435, 30: 0.03142421,
@@ -398,6 +416,9 @@ def encode(x,p):
     else:
         y.append(1) # output a 1 followed by "straddle" zeros
         y.extend([0]*straddle)
+        
+    print("The time required for encoding is:",time.time()-start)
+    
     return(y)
 
 def decode(y,p,n):
@@ -410,6 +431,8 @@ def decode(y,p,n):
     
     length_trained_LSTM = 30
     
+    # Number of characters that the LSTM was trained with
+    n_vocab = 86    
 
     #load the neural network weights saved after training
     model = load_LSTM(n=length_trained_LSTM)    
@@ -423,6 +446,9 @@ def decode(y,p,n):
     f.pop()
     
     p = list(p.values())
+    
+#    print(p)
+#    print(f)
     
     y.extend(precision*[0]) # dummy zeros to prevent index out of bound errors
     x = n*[0] # initialise all zeros 
@@ -482,12 +508,12 @@ def decode(y,p,n):
             so.write('Arithmetic decoded %d%%    \r' % int(floor(k/n*100)))
             so.flush()
 
-        A = x[k-length_trained_LSTM:k]
+        A = bytes(x[k-length_trained_LSTM:k])
         
-        p,f = get_probabilities(prior_sequence=A, 
+        p,f,alphabet = get_probabilities(prior_sequence=A, 
                                 model=model, 
-                                n_vocab=n_vocab, 
-                                char_to_int=char_to_int)
+                                n_vocab=n_vocab,
+                                is_encoding=False)
         
         lohi_range = hi - lo + 1
         # This is an essential subtelty: the slowest part of the decoder is figuring out
@@ -497,6 +523,15 @@ def decode(y,p,n):
         # implements a binary search and is 100 times more efficient. Try
         # for a = [a for a in f if f[a]<(value-lo)/lohi_range)][-1] for a MUCH slower solution.
         a = bisect(f, (value-lo)/lohi_range) - 1
+        
+#        print(p)
+#        print(f)
+#        print(a)
+#        print(alphabet)
+#        print(k)
+#        print(len(x))
+#        raise Exception
+        
         x[k] = alphabet[a] # output alphabet[a]
 
 
