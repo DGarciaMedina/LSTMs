@@ -13,6 +13,7 @@ from keras.callbacks import ModelCheckpoint
 from keras.utils import np_utils
 import operator
 import time
+from math import log2
 
 char_to_int = {'\n': 0, ' ': 1, '!': 2, '"': 3, '#': 4, '$': 5, '%': 6, '&': 7,
                    "'": 8, '(': 9, ')': 10, '*': 11, ',': 12, '-': 13, '.': 14, '/': 15,
@@ -26,6 +27,8 @@ char_to_int = {'\n': 0, ' ': 1, '!': 2, '"': 3, '#': 4, '$': 5, '%': 6, '&': 7,
                    'n': 72, 'o': 73, 'p': 74, 'q': 75, 'r': 76, 's': 77, 't': 78, 'u': 79,
                    'v': 80, 'w': 81, 'x': 82, 'y': 83, 'z': 84, '|': 85}
 
+cond_entropy = 0
+
 def load_LSTM(n):
     start = time.time()
     
@@ -38,7 +41,13 @@ def load_LSTM(n):
     model.add(Dense(86, activation='softmax'))
     
     # load the network weights
-    filename = "weights-improvement-capital-cheat-20-1.5695.hdf5"
+    if n == 30:
+        filename = "weights-improvement-capital-cheat-20-1.5695.hdf5"
+    elif n == 5:
+        raise Exception
+    elif n == 1:
+        filename = "weights-improvement-capital-seq1-20-2.5730.hdf5"
+        
     model.load_weights(filename)
     model.compile(loss='categorical_crossentropy', optimizer='adam')
     
@@ -82,6 +91,8 @@ def get_probabilities(prior_sequence,model,n_vocab,is_encoding):
     if is_encoding:
         f = dict([(a,mf) for a,mf in zip(p,f)])
     
+    global cond_entropy
+    cond_entropy += -sum([p[a]*log2(p[a]) for a in p if p[a]>0])
     
 #    print("The time to find the probability using the LSTM is:",time.time()-start)
 
@@ -91,7 +102,7 @@ def get_probabilities(prior_sequence,model,n_vocab,is_encoding):
         p = list(p.values())
         return p,f,alphabet
 
-def encode(x,p):
+def encode(x,p,length_trained_LSTM):
     start = time.time()
     '''
     The inputs are described below:
@@ -131,12 +142,14 @@ def encode(x,p):
     
     precision = 48
     
+    cond_entropy = 0
+    
     one = int(2**precision - 1)
     quarter = int(ceil(one/4))
     half = 2*quarter
     threequarters = 3*quarter
 
-    length_trained_LSTM = 30
+#    length_trained_LSTM = 30
     
     '''
     chars has the following shape:
@@ -222,6 +235,9 @@ def encode(x,p):
     '''
     
     for k in range(length_trained_LSTM):
+        
+        cond_entropy += -sum([p[a]*log2(p[a]) for a in p.keys()])
+        
         # arithmetic coding is slower than vl_encode, so we display a "progress bar"
         # to let the user know that we are processing the file and haven't crashed...
         if k % 100 == 0:
@@ -339,9 +355,6 @@ def encode(x,p):
                  53: 0.9999999467071703, 84: 0.9999999844262923, 4: 0.999999987571704,
                  5: 0.9999999883852864, 6: 0.9999999891778332, 29: 0.99999998991288}
         '''
-#        print(p)
-#        print(f)
-#        raise Exception
         
         # arithmetic coding is slower than vl_encode, so we display a "progress bar"
         # to let the user know that we are processing the file and haven't crashed...
@@ -418,10 +431,11 @@ def encode(x,p):
         y.extend([0]*straddle)
         
     print("The time required for encoding is:",time.time()-start)
+    print("The entropy is:",cond_entropy/len(x))
     
     return(y)
 
-def decode(y,p,n):
+def decode(y,p,n,length_of_LSTM_context):
     
     precision = 48
     one = int(2**precision - 1)
@@ -429,13 +443,13 @@ def decode(y,p,n):
     half = 2*quarter
     threequarters = 3*quarter
     
-    length_trained_LSTM = 30
+    length_trained_LSTM = length_of_LSTM_context
     
     # Number of characters that the LSTM was trained with
     n_vocab = 86    
 
     #load the neural network weights saved after training
-    model = load_LSTM(n=length_trained_LSTM)    
+    model = load_LSTM(length_of_LSTM_context)    
 
     p = dict([(a,p[a]) for a in p if p[a]>0])
     
@@ -446,9 +460,6 @@ def decode(y,p,n):
     f.pop()
     
     p = list(p.values())
-    
-#    print(p)
-#    print(f)
     
     y.extend(precision*[0]) # dummy zeros to prevent index out of bound errors
     x = n*[0] # initialise all zeros 
@@ -523,14 +534,6 @@ def decode(y,p,n):
         # implements a binary search and is 100 times more efficient. Try
         # for a = [a for a in f if f[a]<(value-lo)/lohi_range)][-1] for a MUCH slower solution.
         a = bisect(f, (value-lo)/lohi_range) - 1
-        
-#        print(p)
-#        print(f)
-#        print(a)
-#        print(alphabet)
-#        print(k)
-#        print(len(x))
-#        raise Exception
         
         x[k] = alphabet[a] # output alphabet[a]
 

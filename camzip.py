@@ -7,7 +7,7 @@ from json import dump
 from sys import argv
 
 
-def camzip(method, filename):
+def camzip(method, filename, length_of_LSTM_context=30):
 
     with open(filename, 'rb') as fin:
         x = fin.read()
@@ -29,7 +29,7 @@ def camzip(method, filename):
     elif method == 'arithmetic':
         y = arithmetic.encode(x,p)
     elif method == "conditional-arithmetic":
-        y = con_ari.encode(x,p)
+        y = con_ari.encode(x,p,length_of_LSTM_context)
     else:
         raise NameError('Compression method %s unknown' % method)
     
@@ -46,6 +46,8 @@ def camzip(method, filename):
 
     with open(pfile, 'w') as fp:
         dump(frequencies, fp)
+        
+    return y
 
 
 if __name__ == "__main__":

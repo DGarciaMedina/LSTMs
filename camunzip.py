@@ -6,7 +6,7 @@ from json import load
 from sys import argv
 
 
-def camunzip(filename):
+def camunzip(filename,length_of_LSTM_context=30):
     if (filename[-1] == 'h'):
         method = 'huffman'
     elif (filename[-1] == 's'):
@@ -41,7 +41,7 @@ def camunzip(filename):
     elif method == 'arithmetic':
         x = arithmetic.decode(y,p,n)
     elif method == "conditional-arithmetic":
-        x = con_ari.decode(y,p,n)
+        x = con_ari.decode(y,p,n,length_of_LSTM_context)
     else:
         raise NameError('This will never happen (famous last words)')
     
@@ -51,6 +51,7 @@ def camunzip(filename):
     with open(outfile, 'wb') as fout:
         fout.write(bytes(x))
 
+    return x
 
 
 if __name__ == "__main__":
